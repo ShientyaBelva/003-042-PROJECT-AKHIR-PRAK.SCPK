@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
+import os
+import json
 
 # KONFIGURASI HALAMAN 
 st.set_page_config(
@@ -156,11 +158,85 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+HISTORY_FILE = "history_data.csv"
+RESULTS_DIR = "saved_results"
+
+if not os.path.exists(RESULTS_DIR):
+    os.makedirs(RESULTS_DIR)
+
+def load_history_from_csv():
+    """Membaca riwayat dari file CSV"""
+    if os.path.exists(HISTORY_FILE):
+        df = pd.read_csv(HISTORY_FILE)
+        # Konversi ke list of dict (tanpa kolom 'top_watch' yang mungkin berupa dict)
+        history = []
+        for _, row in df.iterrows():
+            # weights disimpan sebagai string JSON, perlu di-parse
+            weights = json.loads(row['weights_json'])
+            entry = {
+                'id': int(row['id']),
+                'timestamp': row['timestamp'],
+                'name': row['name'],
+                'weights': weights,
+                'top_watch': {
+                    'brand': row['top_brand'],
+                    'model': row['top_model'],
+                    'score': float(row['top_score'])
+                },
+                'total_watches': int(row['total_watches'])
+            }
+            history.append(entry)
+        return history
+    return []
+
+def save_history_to_csv(history):
+    """Menyimpan riwayat ke file CSV"""
+    if not history:
+        return
+    rows = []
+    for h in history:
+        rows.append({
+            'id': h['id'],
+            'timestamp': h['timestamp'],
+            'name': h['name'],
+            'weights_json': json.dumps(h['weights']),  # simpan bobot sebagai JSON string
+            'top_brand': h['top_watch']['brand'],
+            'top_model': h['top_watch']['model'],
+            'top_score': h['top_watch']['score'],
+            'total_watches': h['total_watches']
+        })
+    df = pd.DataFrame(rows)
+    df.to_csv(HISTORY_FILE, index=False)
+
+def load_saved_result(result_id):
+    """Membaca DataFrame hasil perhitungan berdasarkan id"""
+    file_path = os.path.join(RESULTS_DIR, f"result_{result_id}.csv")
+    if os.path.exists(file_path):
+        return pd.read_csv(file_path)
+    return None
+
+def save_saved_result(result_id, df_result):
+    """Menyimpan DataFrame hasil perhitungan ke file CSV"""
+    file_path = os.path.join(RESULTS_DIR, f"result_{result_id}.csv")
+    df_result.to_csv(file_path, index=False)
+
+
 # INISIALISASI SESSION STATE 
+# Session state digunakan untuk menyimpan hasil perhitungan SAW dan riwayat, sehingga tidak hilang saat pengguna mengubah slider
+
 if 'history' not in st.session_state:
-    st.session_state.history = []
+    loaded_history = load_history_from_csv()
+    st.session_state.history = loaded_history
+    
 if 'saved_results' not in st.session_state:
-    st.session_state.saved_results = {}
+    # Muat saved_results dari file berdasarkan id di history
+    saved = {}
+    for h in st.session_state.history:
+        result_df = load_saved_result(h['id'])
+        if result_df is not None:
+            saved[h['id']] = result_df
+    st.session_state.saved_results = saved
+    
 if 'saw_result' not in st.session_state:
     st.session_state.saw_result = None
 if 'norm_df' not in st.session_state:
@@ -168,7 +244,7 @@ if 'norm_df' not in st.session_state:
 if 'norm_details' not in st.session_state:
     st.session_state.norm_details = None
 
-# LOAD DATA
+# LOAD DATA    
 @st.cache_data
 def load_data():
     try:
@@ -257,7 +333,10 @@ def plot_bar_gradient(data):
     fig, ax = plt.subplots(figsize=(3.5, 2.5))
     bars = ax.barh(top10['Label'], scores, color=colors, edgecolor='#5d3a1a', linewidth=0.8)
     ax.set_xlabel('SAW Score', fontsize=8, color='#4e342e')
-    ax.set_title('Top 10 Smartwatch Berdasarkan SAW Score', fontsize=10, color='#4e342e', fontweight='bold')
+    
+    n_items = len(top10)
+    ax.set_title(f'Top {n_items} Smartwatch Berdasarkan SAW Score', fontsize=10, color='#4e342e', fontweight='bold')
+    
     ax.invert_yaxis()
     ax.set_facecolor('#faf0e6')
     fig.patch.set_facecolor('#f5e6d3')
@@ -385,6 +464,8 @@ def main():
                 }
                 st.session_state.history.insert(0, entry)
                 st.session_state.saved_results[entry['id']] = result.copy()
+                save_history_to_csv(st.session_state.history)
+                save_saved_result(entry['id'], result)
                 st.success(f"✅ '{nama_untuk_disimpan}' tersimpan!")
                 st.rerun()                
     
@@ -477,6 +558,11 @@ def main():
             if st.button("🗑️ Hapus Semua Riwayat"):
                 st.session_state.history = []
                 st.session_state.saved_results = {}
+                # Hapus file
+                if os.path.exists(HISTORY_FILE):
+                    os.remove(HISTORY_FILE)
+                for f in os.listdir(RESULTS_DIR):
+                    os.remove(os.path.join(RESULTS_DIR, f))
                 st.rerun()
             for hist in st.session_state.history:
                 with st.container():
@@ -510,6 +596,11 @@ def main():
                             st.session_state.history.pop(idx)
                             if hist['id'] in st.session_state.saved_results:
                                 del st.session_state.saved_results[hist['id']]
+                            # Hapus file
+                            file_path = os.path.join(RESULTS_DIR, f"result_{hist['id']}.csv")
+                            if os.path.exists(file_path):
+                                os.remove(file_path)
+                            save_history_to_csv(st.session_state.history)
                             st.rerun()
                     st.markdown("---")
             # Tampilkan detail visualisasi jika ada view_id

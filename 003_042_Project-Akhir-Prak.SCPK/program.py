@@ -6,7 +6,7 @@ from datetime import datetime
 import warnings
 warnings.filterwarnings('ignore')
 
-# ================= KONFIGURASI HALAMAN =================
+# KONFIGURASI HALAMAN 
 st.set_page_config(
     page_title="SmartWatchRank",
     page_icon="⌚",
@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ================= CSS KUSTOM =================
+# CSS KUSTOM 
 st.markdown("""
 <style>
     .stApp {
@@ -38,11 +38,9 @@ st.markdown("""
     [data-testid="stSidebar"] .stMultiSelect [data-baseweb="select"] input {
         color: #4e342e !important;
     }
-    /* Warna teks pada tag yang sudah dipilih */
     [data-testid="stSidebar"] .stMultiSelect [data-baseweb="tag"] span {
         color: #4e342e !important;
     }
-    /* Warna teks pada opsi yang diketik (saat menulis) */
     [data-testid="stSidebar"] .stMultiSelect input {
         color: #4e342e !important;
     }
@@ -158,7 +156,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ================= INISIALISASI SESSION STATE =================
+# INISIALISASI SESSION STATE 
 if 'history' not in st.session_state:
     st.session_state.history = []
 if 'saved_results' not in st.session_state:
@@ -170,7 +168,7 @@ if 'norm_df' not in st.session_state:
 if 'norm_details' not in st.session_state:
     st.session_state.norm_details = None
 
-# ================= LOAD DATA =================
+# LOAD DATA
 @st.cache_data
 def load_data():
     try:
@@ -192,7 +190,7 @@ def load_data():
         st.error(f"Error loading CSV: {e}")
         return pd.DataFrame()
 
-# ================= FUNGSI SAW =================
+# FUNGSI SAW 
 def process_saw(df, weights):
     result = df.copy()
     norm_df = pd.DataFrame(index=df.index)
@@ -296,7 +294,7 @@ def plot_line_chart_harga_saw(data):
     plt.tight_layout()
     return fig
 
-# ================= MAIN =================
+# Main
 def main():
     st.title("⌚ SmartWatchRank")
     st.markdown("### PEMILIHAN SMARTWATCH TERBAIK")
@@ -345,7 +343,7 @@ def main():
         )
         
         if st.button("🔢 Hitung SAW", use_container_width=True, type="primary"):
-            # Ambil bobot dan filter brand dari state saat ini (sudah terdefinisi)
+            # Ambil bobot dan filter brand dari state saat ini 
             with st.spinner("Menghitung SAW..."):
                 result_full, norm, details = process_saw(df, weights)
                 if brand_filter:

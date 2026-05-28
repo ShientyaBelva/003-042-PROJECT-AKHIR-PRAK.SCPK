@@ -465,7 +465,7 @@ def main():
     st.title("⌚ SmartWatchRank")
     st.markdown("### PEMILIHAN SMARTWATCH TERBAIK")
     st.markdown(
-        "#### Menggunakan Metode Simple Additive Weighting (SAW) - SCPK 2025/2026"
+        "#### Menggunakan Metode Simple Additive Weighting (SAW)"
     )
     st.markdown("---")
 
@@ -853,7 +853,7 @@ def main():
                 )
             st.markdown("**Nama:** Shientya Belva")
             st.markdown("**NIM:** 123240042")
-            st.markdown("**Kontribusi:** Desain UI/UX, Analisis Data & Visualisasi")
+            st.markdown("**Kontribusi:** Laporan, Analisis Data & Visualisasi")
 
         with col2:
             try:
@@ -866,7 +866,7 @@ def main():
                 )
             st.markdown("**Nama:** Bylbiss El Haqqie")
             st.markdown("**NIM:** 123240003")
-            st.markdown("**Peran:** Implementasi SAW")
+            st.markdown("**Kontribusi:** Implementasi SAW & Desain")
 
         st.markdown("---")
         st.markdown("## 📖 Metode Simple Additive Weighting (SAW)")
